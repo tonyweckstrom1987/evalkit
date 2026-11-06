@@ -63,7 +63,7 @@ describe("runEval: lisatestit", () => {
     expect(ok.calls).toHaveLength(6);
 
     const never = fakeLlm(() => "ok");
-    await expect(runEval({ set: set(cases), models: ["m1", "m2"], baseUrl, fetch: never.fetch, judgeModel: "t", maxCalls: 5 })).rejects.toThrow(/6 mallikutsua; enintään 5/);
+    await expect(runEval({ set: set(cases), models: ["m1", "m2"], baseUrl, fetch: never.fetch, judgeModel: "t", maxCalls: 5 })).rejects.toThrow(/6 model calls; at most 5/);
     expect(never.calls).toHaveLength(0);
   });
 
@@ -80,7 +80,7 @@ describe("runEval: lisatestit", () => {
     const r = await runEval({ set: set([{ id: "a", prompt: "p", expect: { contains: "x" } }]), models: ["m"], baseUrl, fetch: f });
     expect(r.cases[0].error).toBe("boom");
     expect(r.cases[0].passed).toBe(false);
-    expect(r.cases[0].failures).toEqual(["virhe: boom"]);
+    expect(r.cases[0].failures).toEqual(["error: boom"]);
     expect(r.cases[0].judgeScore).toBeNull();
   });
 
@@ -118,7 +118,7 @@ describe("runEval: lisatestit", () => {
   it("timeoutMs valitetaan mallikutsuun: hidas vastaus on virhe selkealla viestilla", async () => {
     const l = fakeLlm(() => ({ delayMs: 500, text: "myohaan" }));
     const r = await runEval({ set: set([{ id: "a", prompt: "p", expect: { contains: "x" } }]), models: ["m"], baseUrl, fetch: l.fetch, timeoutMs: 20 });
-    expect(r.cases[0].error).toMatch(/aikakatkaistiin \(20 ms\)/);
+    expect(r.cases[0].error).toMatch(/timed out \(20 ms\)/);
     expect(r.cases[0].passed).toBe(false);
   });
 

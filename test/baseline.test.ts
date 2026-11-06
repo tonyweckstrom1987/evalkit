@@ -93,10 +93,10 @@ describe("baseline", () => {
     expect(compare(report([row("m", "a", false), row("m", "b", true)]), base).ok).toBe(false);
   });
 
-  it("regression syy on ensimmäinen virheilmoitus, tai 'kaatui' jos sitä ei ole", () => {
+  it("regression syy on ensimmäinen virheilmoitus, tai 'failed' jos sitä ei ole", () => {
     const base = { version: 1 as const, results: { "m::a": true } };
     const bare: CaseResult = { ...row("m", "a", false), failures: [] };
-    expect(compare(report([bare]), base).regressions[0].reason).toBe("kaatui");
+    expect(compare(report([bare]), base).regressions[0].reason).toBe("failed");
   });
 
   it("writeBaseline kirjoittaa version 1, rivinvaihdon loppuun ja luo puuttuvat hakemistot", () => {
@@ -118,7 +118,7 @@ describe("baseline", () => {
       writeFileSync(join(dir, "a.json"), JSON.stringify({ version: 1 }));
       writeFileSync(join(dir, "b.json"), JSON.stringify({ version: 1, results: null }));
       writeFileSync(join(dir, "c.json"), "null");
-      for (const f of ["a.json", "b.json", "c.json"]) expect(() => readBaseline(join(dir, f))).toThrow(/ei ole tuettu/);
+      for (const f of ["a.json", "b.json", "c.json"]) expect(() => readBaseline(join(dir, f))).toThrow(/unsupported format/);
     } finally {
       rmSync(dir, { recursive: true, force: true });
     }
@@ -133,9 +133,9 @@ describe("baseline", () => {
       expect(Object.keys(JSON.parse(readFileSync(p, "utf8")).results)).toEqual(["a::1", "z::1"]);
       expect(readBaseline(p)?.results["a::1"]).toBe(false);
       writeFileSync(join(dir, "x.json"), JSON.stringify({ version: 9 }));
-      expect(() => readBaseline(join(dir, "x.json"))).toThrow(/ei ole tuettu/);
+      expect(() => readBaseline(join(dir, "x.json"))).toThrow(/unsupported format/);
       writeFileSync(join(dir, "y.json"), "{ ei json");
-      expect(() => readBaseline(join(dir, "y.json"))).toThrow(/ei ole kelvollista JSON/);
+      expect(() => readBaseline(join(dir, "y.json"))).toThrow(/is not valid JSON/);
     } finally {
       rmSync(dir, { recursive: true, force: true });
     }

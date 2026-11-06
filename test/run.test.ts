@@ -66,20 +66,20 @@ describe("runEval", () => {
     expect(ok.calls).toHaveLength(10);
 
     const never = fakeLlm(() => "ok");
-    await expect(runEval({ set: set(cases), models: ["m"], baseUrl, fetch: never.fetch, maxCalls: 9 })).rejects.toThrow(/enintään 9/);
+    await expect(runEval({ set: set(cases), models: ["m"], baseUrl, fetch: never.fetch, maxCalls: 9 })).rejects.toThrow(/at most 9/);
     expect(never.calls).toHaveLength(0);
   });
 
   it("oletuskatto on 200 kutsua", async () => {
     const cases = Array.from({ length: 101 }, (_, i) => ({ id: `c-${i}`, prompt: "p" }));
     const never = fakeLlm(() => "ok");
-    await expect(runEval({ set: set(cases), models: ["a", "b"], baseUrl, fetch: never.fetch })).rejects.toThrow(/202 mallikutsua/);
+    await expect(runEval({ set: set(cases), models: ["a", "b"], baseUrl, fetch: never.fetch })).rejects.toThrow(/202 model calls/);
     expect(never.calls).toHaveLength(0);
   });
 
-  it("minJudgeScore ilman tuomarimallia hylätään ennen kutsuja", async () => {
+  it("minJudgeScore ilman tuomarimallia hylätään (viesti 'no judge model was given') ennen kutsuja", async () => {
     const never = fakeLlm(() => "ok");
-    await expect(runEval({ set: set([{ id: "a", prompt: "p", expect: { minJudgeScore: 4 } }]), models: ["m"], baseUrl, fetch: never.fetch })).rejects.toThrow(/tuomarimallia/);
+    await expect(runEval({ set: set([{ id: "a", prompt: "p", expect: { minJudgeScore: 4 } }]), models: ["m"], baseUrl, fetch: never.fetch })).rejects.toThrow(/no judge model was given/);
     expect(never.calls).toHaveLength(0);
   });
 
@@ -99,12 +99,12 @@ describe("runEval", () => {
     const never = fakeLlm(() => "ok");
     await expect(
       runEval({ set: set([{ id: "a", prompt: "p", expect: { minJudgeScore: 4 } }, { id: "b", prompt: "p", expect: { minJudgeScore: 4 } }]), models: ["m"], baseUrl, fetch: never.fetch, judgeModel: "t", maxCalls: 3 }),
-    ).rejects.toThrow(/4 mallikutsua/);
+    ).rejects.toThrow(/4 model calls/);
   });
 
   it("hylkää tyhjän mallilistan ennen kutsuja", async () => {
     const never = fakeLlm(() => "ok");
-    await expect(runEval({ set: set([{ id: "a", prompt: "p" }]), models: [], baseUrl, fetch: never.fetch })).rejects.toThrow(/Vähintään yksi malli/);
+    await expect(runEval({ set: set([{ id: "a", prompt: "p" }]), models: [], baseUrl, fetch: never.fetch })).rejects.toThrow(/At least one model is required/);
     expect(never.calls).toHaveLength(0);
   });
 
@@ -149,7 +149,7 @@ describe("runEval", () => {
     const r = await runEval({ set: set([{ id: "a", prompt: "p", expect: { contains: "x" } }]), models: ["m"], baseUrl, fetch: never.fetch, maxTokens: 99999 });
     expect(never.calls).toHaveLength(0);
     expect(r.cases[0].passed).toBe(false);
-    expect(r.cases[0].failures[0]).toMatch(/^virhe: .*maxTokens/);
+    expect(r.cases[0].failures[0]).toMatch(/^error: .*maxTokens/);
     expect(r.cases[0].response).toBe("");
   });
 

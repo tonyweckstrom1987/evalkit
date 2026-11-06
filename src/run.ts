@@ -114,17 +114,17 @@ function summarize(models: string[], cases: CaseResult[]): ModelSummary[] {
 
 export async function runEval(opts: RunOptions): Promise<Report> {
   const { set, models } = opts;
-  if (models.length === 0) throw new Error("Vähintään yksi malli tarvitaan");
+  if (models.length === 0) throw new Error("At least one model is required");
 
   const needsJudge = set.cases.some((c) => c.expect?.minJudgeScore !== undefined);
   if (needsJudge && !opts.judgeModel) {
-    throw new Error("Evalset käyttää minJudgeScore-ehtoa, mutta tuomarimallia ei ole annettu (--judge-model)");
+    throw new Error("The eval set uses minJudgeScore, but no judge model was given (--judge-model)");
   }
   const judgeCases = set.cases.filter((c) => c.expect?.minJudgeScore !== undefined).length;
   const planned = models.length * set.cases.length + (opts.judgeModel ? models.length * judgeCases : 0);
   const cap = opts.maxCalls ?? MAX_CALLS_PER_RUN;
   if (planned > cap) {
-    throw new Error(`Ajo tekisi ${planned} mallikutsua; enintään ${cap} sallitaan. Ajoa ei aloitettu`);
+    throw new Error(`The run would make ${planned} model calls; at most ${cap} are allowed. The run was not started`);
   }
 
   const jobs = models.flatMap((model) => set.cases.map((c) => ({ model, c })));
@@ -155,7 +155,7 @@ export async function runEval(opts: RunOptions): Promise<Report> {
         group: groupOf(c),
         model,
         passed: hasExpect ? false : null,
-        failures: hasExpect ? [`virhe: ${message}`] : [],
+        failures: hasExpect ? [`error: ${message}`] : [],
         latencyMs: Date.now() - start,
         response: "",
         judgeScore: null,

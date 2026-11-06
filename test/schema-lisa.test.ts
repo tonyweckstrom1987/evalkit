@@ -3,14 +3,14 @@ import { parseEvalSet, groupOf } from "../src/schema.js";
 
 describe("evalset-skeema: lisatestit", () => {
   it("ei-objekti ja puuttuva version-kentta hylataan; oletuslahde on 'evalset'", () => {
-    expect(() => parseEvalSet(null)).toThrow(/Evalset 'evalset' ei kelpaa/);
-    expect(() => parseEvalSet("teksti")).toThrow(/Evalset 'evalset' ei kelpaa/);
-    expect(() => parseEvalSet(42)).toThrow(/Evalset/);
+    expect(() => parseEvalSet(null)).toThrow(/Eval set 'evalset' is invalid/);
+    expect(() => parseEvalSet("teksti")).toThrow(/Eval set 'evalset' is invalid/);
+    expect(() => parseEvalSet(42)).toThrow(/Eval set/);
     expect(() => parseEvalSet({ cases: [{ id: "a", prompt: "p" }] })).toThrow(/version/);
   });
 
   it("virheilmoituksen muoto: otsikko ja luettelorivit '  - polku: viesti'", () => {
-    expect(() => parseEvalSet({ version: 1, cases: [{ id: "a", prompt: "" }] }, "oma.json")).toThrow(/^Evalset 'oma\.json' ei kelpaa:\n {2}- cases\.0\.prompt: /);
+    expect(() => parseEvalSet({ version: 1, cases: [{ id: "a", prompt: "" }] }, "oma.json")).toThrow(/^Eval set 'oma\.json' is invalid:\n {2}- cases\.0\.prompt: /);
   });
 
   it("tyhja prompt, tyhja tagi ja minJudgeScore rajojen ulkopuolelta (0.99, 5.01) hylataan", () => {

@@ -21,7 +21,7 @@ const CaseSchema = z.object({
 const SetV1Schema = z.object({
   version: z.literal(1),
   name: z.string().optional(),
-  cases: z.array(CaseSchema).min(1, "evalsetissä täytyy olla vähintään yksi tapaus"),
+  cases: z.array(CaseSchema).min(1, "an eval set must contain at least one case"),
 });
 
 // Vanha muoto (mcp-model-router): pelkkä taulukko, jossa expectedContains ja valinnainen category.
@@ -32,7 +32,7 @@ const LegacyCaseSchema = z.object({
   expectedContains: z.string().min(1).optional(),
   category: z.string().min(1).optional(),
 });
-const LegacySchema = z.array(LegacyCaseSchema).min(1, "evalsetissä täytyy olla vähintään yksi tapaus");
+const LegacySchema = z.array(LegacyCaseSchema).min(1, "an eval set must contain at least one case");
 
 export type Expect = z.infer<typeof ExpectSchema>;
 export type EvalCase = z.infer<typeof CaseSchema>;
@@ -43,11 +43,11 @@ export interface EvalSet {
 }
 
 function fail(source: string, issues: string[]): never {
-  throw new Error(`Evalset '${source}' ei kelpaa:\n${issues.map((i) => `  - ${i}`).join("\n")}`);
+  throw new Error(`Eval set '${source}' is invalid:\n${issues.map((i) => `  - ${i}`).join("\n")}`);
 }
 
 function formatIssues(err: z.ZodError): string[] {
-  return err.issues.map((i) => `${i.path.join(".") || "(juuri)"}: ${i.message}`);
+  return err.issues.map((i) => `${i.path.join(".") || "(root)"}: ${i.message}`);
 }
 
 /** Jäsentää evalsetin (versio 1 tai vanha taulukkomuoto) ja tarkistaa ristiriidat. */
@@ -75,13 +75,13 @@ export function parseEvalSet(raw: unknown, source = "evalset"): EvalSet {
   const problems: string[] = [];
   const seen = new Set<string>();
   for (const c of set.cases) {
-    if (seen.has(c.id)) problems.push(`cases: id '${c.id}' esiintyy useammin kuin kerran`);
+    if (seen.has(c.id)) problems.push(`cases: id '${c.id}' appears more than once`);
     seen.add(c.id);
     if (c.expect?.regex !== undefined) {
       try {
         new RegExp(c.expect.regex);
       } catch (e) {
-        problems.push(`cases.${c.id}.expect.regex: virheellinen lauseke (${e instanceof Error ? e.message : String(e)})`);
+        problems.push(`cases.${c.id}.expect.regex: invalid regular expression (${e instanceof Error ? e.message : String(e)})`);
       }
     }
   }
@@ -94,7 +94,7 @@ export function loadEvalSet(path: string): EvalSet {
   try {
     raw = JSON.parse(readFileSync(path, "utf8"));
   } catch (err) {
-    throw new Error(`Evalset '${path}' ei ole luettavissa tai ei ole kelvollista JSON:ia: ${err instanceof Error ? err.message : String(err)}`);
+    throw new Error(`Eval set '${path}' cannot be read or is not valid JSON: ${err instanceof Error ? err.message : String(err)}`);
   }
   return parseEvalSet(raw, path);
 }

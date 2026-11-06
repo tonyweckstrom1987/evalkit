@@ -55,20 +55,20 @@ Alla on repon omat testitallenteet (`test/fixtures/action/`) ajettuna `--cassett
 $ npx evalkit run examples/yleinen-fi.json --models demo --base-url https://litellm.example/v1 \
     --baseline test/fixtures/action/baseline-ok.json --cassette test/fixtures/action/yleinen.cassette.json
 Evalkit: yleinen-fi
-  demo: läpäisi 2/3 (67 %), virheitä 0
-Epäonnistuneet tapaukset:
-  - demo / lasku-01: regex: vastaus ei täsmää lausekkeeseen /^\s*42\s*\.?\s*$/
-Vertailu baselineen:
-  regressioita: 0, korjaantuneita: 0, uusia: 0, puuttuvia: 0
+  demo: passed 2/3 (67 %), errors 0
+Failed cases:
+  - demo / lasku-01: regex: response does not match /^\s*42\s*\.?\s*$/
+Comparison to baseline:
+  regressions: 0, fixed: 0, new: 0, missing: 0
 ```
 
 Kun baselinessa sama tapaus oli läpäissyt, sama tulos on regressio ja ajo kaatuu (poistumiskoodi 1):
 
 ```text
-Vertailu baselineen:
-  regressioita: 1, korjaantuneita: 0, uusia: 0, puuttuvia: 0
-  REGRESSIO demo::lasku-01: regex: vastaus ei täsmää lausekkeeseen /^\s*42\s*\.?\s*$/
-  demo: läpäisyprosentti laski 33 %-yksikköä
+Comparison to baseline:
+  regressions: 1, fixed: 0, new: 0, missing: 0
+  REGRESSION demo::lasku-01: regex: response does not match /^\s*42\s*\.?\s*$/
+  demo: pass rate dropped by 33 percentage points
 ```
 
 

@@ -43,13 +43,13 @@ echo "exit=$?"
 
 ```text
 Evalkit: yleinen-fi
-  demo: läpäisi 2/3 (67 %), virheitä 0
-Epäonnistuneet tapaukset:
-  - demo / lasku-01: regex: vastaus ei täsmää lausekkeeseen /^\s*42\s*\.?\s*$/
-Vertailu baselineen:
-  regressioita: 1, korjaantuneita: 0, uusia: 0, puuttuvia: 0
-  REGRESSIO demo::lasku-01: regex: vastaus ei täsmää lausekkeeseen /^\s*42\s*\.?\s*$/
-  demo: läpäisyprosentti laski 33 %-yksikköä
+  demo: passed 2/3 (67 %), errors 0
+Failed cases:
+  - demo / lasku-01: regex: response does not match /^\s*42\s*\.?\s*$/
+Comparison to baseline:
+  regressions: 1, fixed: 0, new: 0, missing: 0
+  REGRESSION demo::lasku-01: regex: response does not match /^\s*42\s*\.?\s*$/
+  demo: pass rate dropped by 33 percentage points
 exit=1
 ```
 
@@ -67,9 +67,9 @@ echo "exit=$?"
 
 ```text
 Evalkit: yleinen-fi
-  demo: läpäisi 3/3 (100 %), virheitä 0
-Vertailu baselineen:
-  regressioita: 0, korjaantuneita: 0, uusia: 0, puuttuvia: 0
+  demo: passed 3/3 (100 %), errors 0
+Comparison to baseline:
+  regressions: 0, fixed: 0, new: 0, missing: 0
 exit=0
 ```
 

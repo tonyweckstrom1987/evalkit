@@ -43,7 +43,7 @@ describe("chat: lisatestit", () => {
       },
     } as unknown as Response;
     const f = (async () => res) as typeof fetch;
-    await expect(chat({ ...base, fetch: f })).rejects.toThrow(/'m' epäonnistui \(502 Bad Gateway\): $/);
+    await expect(chat({ ...base, fetch: f })).rejects.toThrow(/'m' failed \(502 Bad Gateway\): $/);
   });
 
   it("verkkovirhe valitetaan sellaisenaan (ei aikakatkaisuviestia)", async () => {
@@ -66,7 +66,7 @@ describe("chat: lisatestit", () => {
     const f = (async () => {
       throw Object.assign(new Error("keskeytetty"), { name: "AbortError" });
     }) as typeof fetch;
-    await expect(chat({ ...base, fetch: f })).rejects.toThrow(/aikakatkaistiin \(60000 ms\)/);
+    await expect(chat({ ...base, fetch: f })).rejects.toThrow(/timed out \(60000 ms\)/);
   });
 
   it("200-vastaus, jonka runko ei ole JSONia, hylataan", async () => {

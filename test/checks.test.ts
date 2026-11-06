@@ -34,7 +34,7 @@ describe("evaluate", () => {
   });
   it("contains-ehdon kirjainkoko ei vaikuta myöskään ehdon puolella ja virheviesti nimeää ehdon", () => {
     expect(evaluate({ contains: "HELSINKI" }, "helsinki", null).passed).toBe(true);
-    expect(evaluate({ contains: "Tukholma" }, "Helsinki", null).failures).toEqual(["contains: vastaus ei sisällä 'Tukholma'"]);
+    expect(evaluate({ contains: "Tukholma" }, "Helsinki", null).failures).toEqual(["contains: response does not contain 'Tukholma'"]);
   });
   it("notContains raportoi jokaisen kielletyn sanan erikseen ja vertaa kirjainkoosta riippumatta", () => {
     const r = evaluate({ notContains: ["EN TIEDÄ", "ehkä", "ok"] }, "En tiedä, ehkä.", null);
@@ -50,10 +50,10 @@ describe("evaluate", () => {
   it("regex on kirjainkokoriippuvainen (tekstiä ei muunneta pieniksi) ja virheviesti sisältää lausekkeen", () => {
     expect(evaluate({ regex: "^abc" }, "ABC", null).passed).toBe(false);
     expect(evaluate({ regex: "^abc" }, "abc", null).passed).toBe(true);
-    expect(evaluate({ regex: "^z" }, "b", null).failures).toEqual(["regex: vastaus ei täsmää lausekkeeseen /^z/"]);
+    expect(evaluate({ regex: "^z" }, "b", null).failures).toEqual(["regex: response does not match /^z/"]);
   });
   it("minJudgeScore: virheviestit erottavat puuttuvan pisteen ja liian matalan pisteen", () => {
-    expect(evaluate({ minJudgeScore: 4 }, "x", null).failures).toEqual(["minJudgeScore: tuomaripistettä ei saatu"]);
+    expect(evaluate({ minJudgeScore: 4 }, "x", null).failures).toEqual(["minJudgeScore: no judge score received"]);
     expect(evaluate({ minJudgeScore: 4 }, "x", 3.5).failures).toEqual(["minJudgeScore: 3.5 < 4"]);
   });
   it("tuomaripiste ei vaikuta tulokseen, jos minJudgeScore-ehtoa ei ole", () => {

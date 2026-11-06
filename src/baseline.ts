@@ -24,11 +24,11 @@ export function readBaseline(path: string): Baseline | null {
   try {
     parsed = JSON.parse(readFileSync(path, "utf8"));
   } catch (err) {
-    throw new Error(`Baseline '${path}' ei ole kelvollista JSON:ia: ${err instanceof Error ? err.message : String(err)}`);
+    throw new Error(`Baseline '${path}' is not valid JSON: ${err instanceof Error ? err.message : String(err)}`);
   }
   const b = parsed as Partial<Baseline>;
   if (b?.version !== 1 || typeof b.results !== "object" || b.results === null) {
-    throw new Error(`Baseline '${path}' ei ole tuettu muoto (odotettiin version 1)`);
+    throw new Error(`Baseline '${path}' has an unsupported format (expected version 1)`);
   }
   return b as Baseline;
 }
@@ -79,7 +79,7 @@ export function compare(report: Report, baseline: Baseline, maxPassDrop = 0): Co
     agg.n++;
     agg.base += base ? 1 : 0;
     agg.cur += c.passed ? 1 : 0;
-    if (base && !c.passed) regressions.push({ key, reason: c.failures[0] ?? "kaatui" });
+    if (base && !c.passed) regressions.push({ key, reason: c.failures[0] ?? "failed" });
     if (!base && c.passed) fixed.push(key);
   }
 

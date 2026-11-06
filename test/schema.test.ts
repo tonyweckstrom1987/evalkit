@@ -21,16 +21,16 @@ describe("evalset-skeema", () => {
   });
 
   it("hylkää tyhjän evalsetin", () => {
-    expect(() => parseEvalSet({ version: 1, cases: [] })).toThrow(/vähintään yksi tapaus/);
-    expect(() => parseEvalSet([])).toThrow(/vähintään yksi tapaus/);
+    expect(() => parseEvalSet({ version: 1, cases: [] })).toThrow(/at least one case/);
+    expect(() => parseEvalSet([])).toThrow(/at least one case/);
   });
 
   it("hylkää kaksoisid:n", () => {
-    expect(() => parseEvalSet({ version: 1, cases: [{ id: "a", prompt: "p" }, { id: "a", prompt: "q" }] })).toThrow(/'a' esiintyy useammin/);
+    expect(() => parseEvalSet({ version: 1, cases: [{ id: "a", prompt: "p" }, { id: "a", prompt: "q" }] })).toThrow(/'a' appears more than once/);
   });
 
   it("hylkää virheellisen regexin ja tuntemattoman expect-kentän", () => {
-    expect(() => parseEvalSet({ version: 1, cases: [{ id: "a", prompt: "p", expect: { regex: "(" } }] })).toThrow(/virheellinen lauseke/);
+    expect(() => parseEvalSet({ version: 1, cases: [{ id: "a", prompt: "p", expect: { regex: "(" } }] })).toThrow(/invalid regular expression/);
     expect(() => parseEvalSet({ version: 1, cases: [{ id: "a", prompt: "p", expect: { sisaltaa: "x" } }] })).toThrow();
   });
 
@@ -46,9 +46,9 @@ describe("evalset-skeema", () => {
   it("loadEvalSet antaa selkeän virheen puuttuvasta tiedostosta ja rikkinäisestä JSON:ista", () => {
     const dir = mkdtempSync(join(tmpdir(), "evalkit-"));
     try {
-      expect(() => loadEvalSet(join(dir, "ei-ole.json"))).toThrow(/ei ole luettavissa/);
+      expect(() => loadEvalSet(join(dir, "ei-ole.json"))).toThrow(/cannot be read/);
       writeFileSync(join(dir, "rikki.json"), "{ ei json");
-      expect(() => loadEvalSet(join(dir, "rikki.json"))).toThrow(/ei ole luettavissa|ei ole kelvollista JSON/);
+      expect(() => loadEvalSet(join(dir, "rikki.json"))).toThrow(/cannot be read|is not valid JSON/);
     } finally {
       rmSync(dir, { recursive: true, force: true });
     }
@@ -78,7 +78,7 @@ describe("evalset-skeema", () => {
   });
 
   it("hylkää kaksoisid:n myös vanhassa taulukkomuodossa ja virheellisen regexin nimeää tapauksen", () => {
-    expect(() => parseEvalSet([{ id: "a", prompt: "p" }, { id: "a", prompt: "q" }])).toThrow(/esiintyy useammin/);
+    expect(() => parseEvalSet([{ id: "a", prompt: "p" }, { id: "a", prompt: "q" }])).toThrow(/appears more than once/);
     expect(() => parseEvalSet({ version: 1, cases: [{ id: "tapaus-x", prompt: "p", expect: { regex: "[" } }] })).toThrow(/cases\.tapaus-x\.expect\.regex/);
   });
 
@@ -89,8 +89,8 @@ describe("evalset-skeema", () => {
     } catch (e) {
       msg = (e as Error).message;
     }
-    expect(msg).toMatch(/esiintyy useammin/);
-    expect(msg).toMatch(/virheellinen lauseke/);
+    expect(msg).toMatch(/appears more than once/);
+    expect(msg).toMatch(/invalid regular expression/);
   });
 
   it("minJudgeScore: rajat 1 ja 5 sekä desimaali hyväksytään", () => {

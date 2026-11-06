@@ -74,6 +74,6 @@ describe("chat", () => {
   });
   it("aikakatkaisu keskeyttää kutsun selkeällä viestillä", async () => {
     const l = fakeLlm(() => ({ delayMs: 500, text: "liian myöhään" }));
-    await expect(chat({ ...base, timeoutMs: 20, fetch: l.fetch })).rejects.toThrow(/aikakatkaistiin \(20 ms\)/);
+    await expect(chat({ ...base, timeoutMs: 20, fetch: l.fetch })).rejects.toThrow(/timed out \(20 ms\)/);
   });
 });

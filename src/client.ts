@@ -27,7 +27,7 @@ export interface ChatResult {
 
 export class EmptyResponseError extends Error {
   constructor(model: string) {
-    super(`Malli '${model}' palautti tyhjän vastauksen`);
+    super(`Model '${model}' returned an empty response`);
     this.name = "EmptyResponseError";
   }
 }
@@ -35,7 +35,7 @@ export class EmptyResponseError extends Error {
 export async function chat(opts: ChatOptions): Promise<ChatResult> {
   const maxTokens = opts.maxTokens ?? DEFAULT_MAX_TOKENS;
   if (!Number.isInteger(maxTokens) || maxTokens < 1 || maxTokens > MAX_TOKENS_CAP) {
-    throw new Error(`maxTokens täytyy olla kokonaisluku väliltä 1-${MAX_TOKENS_CAP}; kutsua ei tehty`);
+    throw new Error(`maxTokens must be an integer between 1 and ${MAX_TOKENS_CAP}; no request was made`);
   }
   const timeoutMs = opts.timeoutMs ?? 60_000;
   const doFetch = opts.fetch ?? globalThis.fetch;
@@ -53,7 +53,7 @@ export async function chat(opts: ChatOptions): Promise<ChatResult> {
     });
     if (!res.ok) {
       const body = await res.text().catch(() => "");
-      throw new Error(`Pyyntö malliin '${opts.model}' epäonnistui (${res.status} ${res.statusText}): ${body.slice(0, 300)}`);
+      throw new Error(`Request to model '${opts.model}' failed (${res.status} ${res.statusText}): ${body.slice(0, 300)}`);
     }
     const json = (await res.json()) as {
       model?: string;
@@ -70,7 +70,7 @@ export async function chat(opts: ChatOptions): Promise<ChatResult> {
     };
   } catch (err) {
     if (err instanceof Error && err.name === "AbortError") {
-      throw new Error(`Pyyntö malliin '${opts.model}' aikakatkaistiin (${timeoutMs} ms)`);
+      throw new Error(`Request to model '${opts.model}' timed out (${timeoutMs} ms)`);
     }
     throw err;
   } finally {

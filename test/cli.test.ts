@@ -1,4 +1,4 @@
-import { describe, it, expect, beforeEach, afterEach } from "vitest";
+import { describe, it, expect, beforeEach, afterEach, vi } from "vitest";
 import { mkdtempSync, rmSync, writeFileSync, readFileSync, existsSync } from "node:fs";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
@@ -31,7 +31,7 @@ describe("cli", () => {
   it("ilman baselinea: kaikki läpi -> 0, yksikin kaatuu -> 1", async () => {
     expect(await main(common(), io(fakeLlm((c) => (c.messages[0].content === "p" ? "Helsinki" : "Oslo"))))).toBe(0);
     expect(await main(common(), io(fakeLlm(() => "Helsinki")))).toBe(1);
-    expect(out).toMatch(/Epäonnistuneet tapaukset/);
+    expect(out).toMatch(/Failed cases/);
   });
 
   it("--update-baseline kirjoittaa baselinen ja palauttaa 0 vaikka tapauksia kaatuisi", async () => {
@@ -44,7 +44,7 @@ describe("cli", () => {
     const bp = join(dir, "base.json");
     writeFileSync(bp, JSON.stringify({ version: 1, results: { "m::a-01": true, "m::a-02": true } }));
     expect(await main([...common(), "--baseline", bp], io(fakeLlm(() => "Helsinki")))).toBe(1);
-    expect(out).toMatch(/REGRESSIO m::a-02/);
+    expect(out).toMatch(/REGRESSION m::a-02/);
     expect(await main([...common(), "--baseline", bp], io(fakeLlm((c) => (c.messages[0].content === "p" ? "Helsinki" : "Oslo"))))).toBe(0);
   });
 
@@ -66,7 +66,7 @@ describe("cli", () => {
     expect(await main([], io())).toBe(2);
     expect(await main(["foo"], io())).toBe(2);
     expect(await main(["run", setPath, "--base-url", "http://x"], io())).toBe(2);
-    expect(err).toMatch(/Mallit puuttuvat/);
+    expect(err).toMatch(/Missing models/);
     expect(await main(["run", setPath, "--models", "m"], io())).toBe(2);
     expect(await main(["run", "--models", "m", "--base-url", "http://x"], io())).toBe(2);
     expect(await main(["run", join(dir, "ei.json"), "--models", "m", "--base-url", "http://x"], io())).toBe(2);
@@ -77,7 +77,7 @@ describe("cli", () => {
 
   it("--help tulostaa ohjeen ja palauttaa 0", async () => {
     expect(await main(["--help"], io())).toBe(0);
-    expect(out).toMatch(/Poistumiskoodit/);
+    expect(out).toMatch(/Exit codes/);
   });
 
   it("mallit ja osoite voi antaa ympäristömuuttujilla; API-avain luetaan --api-key-env-muuttujasta", async () => {
@@ -149,12 +149,26 @@ describe("cli: --cassette", () => {
     const never = fakeLlm(() => "Helsinki");
     expect(await main(args(), io(never))).toBe(1);
     expect(never.calls).toHaveLength(0);
-    expect(out).toMatch(/tallennetta ei löytynyt/);
+    expect(out).toMatch(/Run once with --cassette-mode record/);
+    expect(out).not.toContain("LLM_CASSETTE_MODE");
+  });
+
+  it("LLM_CASSETTE_MODE ei vaikuta evalkitin kautta: tallenteen puuttuessa neuvo on --cassette-mode record", async () => {
+    // llm-cassette reads LLM_CASSETTE_MODE from process.env when no mode is passed.
+    vi.stubEnv("LLM_CASSETTE_MODE", "record");
+    const never = fakeLlm(() => "Helsinki");
+    try {
+      expect(await main(args(), io(never))).toBe(1);
+    } finally {
+      vi.unstubAllEnvs();
+    }
+    expect(never.calls).toHaveLength(0);
+    expect(out).toMatch(/--cassette-mode record/);
   });
 
   it("tuntematon --cassette-mode ja --cassette-mode ilman --cassettea -> 2", async () => {
     expect(await main(args("--cassette-mode", "joku"), io(undefined))).toBe(2);
-    expect(err).toMatch(/tuntematon tila/);
+    expect(err).toMatch(/--cassette-mode must be replay, record or auto \(got 'joku'\)/);
     expect(await main(["run", setPath, "--models", "m", "--base-url", "http://x", "--cassette-mode", "record"], io(undefined))).toBe(2);
   });
 });
@@ -181,8 +195,8 @@ describe("cli: validate", () => {
     const a = write("a.json", { version: 1, cases: [{ id: "x", prompt: "p" }] });
     const b = write("b.json", [{ id: "y", prompt: "p", expectedContains: "k" }, { id: "z", prompt: "q" }]);
     expect(await main(["validate", a, b], io())).toBe(0);
-    expect(out).toMatch(/OK .*a\.json: 1 tapausta/);
-    expect(out).toMatch(/OK .*b\.json: 2 tapausta/);
+    expect(out).toMatch(/OK .*a\.json: 1 case/);
+    expect(out).toMatch(/OK .*b\.json: 2 cases/);
   });
 
   it("yksikin virheellinen tiedosto -> 2, kaikki tiedostot käydään silti läpi", async () => {
@@ -191,14 +205,14 @@ describe("cli: validate", () => {
     const broken = write("broken.json", "{ ei json");
     expect(await main(["validate", dup, good, broken], io())).toBe(2);
     expect(out).toMatch(/OK .*good\.json/);
-    expect(err).toMatch(/esiintyy useammin/);
-    expect(err).toMatch(/ei ole luettavissa|ei ole kelvollista JSON/);
+    expect(err).toMatch(/appears more than once/);
+    expect(err).toMatch(/cannot be read|is not valid JSON/);
   });
 
   it("puuttuva tiedosto -> 2; ilman tiedostoja -> 2", async () => {
     expect(await main(["validate", join(dir, "ei-ole.json")], io())).toBe(2);
     expect(await main(["validate"], io())).toBe(2);
-    expect(err).toMatch(/vähintään yhden evalset-tiedoston/);
+    expect(err).toMatch(/at least one eval set file/);
   });
 
   it("validate ei kutsu verkkoa (ei fetch-injektiota, ei mallivalintoja tarvita)", async () => {

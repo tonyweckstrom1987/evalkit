@@ -2,6 +2,14 @@
 
 Muoto noudattaa [Keep a Changelog](https://keepachangelog.com/fi/1.1.0/) -tapaa ja versiointi [semveriä](https://semver.org/lang/fi/).
 
+## [Julkaisematon]
+
+### Muutettu
+- CLI:n ohje (`--help`), virheilmoitukset ja konsoliraportti ovat nyt englanniksi. Poistumiskoodit, lippujen nimet, oletusarvot, JSON-raportin rakenne ja baseline-muoto eivät muutu.
+- JSON-raportin ja vertailun tekstikentät (`failures`, `error`, regression `reason`) ovat englanniksi, esimerkiksi `response does not contain 'x'` ja `error: ...`. Kentät ja niiden tyypit pysyvät ennallaan.
+- Kun tallenne puuttuu `--cassette`-ajossa, viesti neuvoo ajamaan `--cassette-mode record`. Aiempi viesti neuvoi asettamaan `LLM_CASSETTE_MODE=record`, mutta evalkit antaa tilan aina itse, joten ympäristömuuttuja ei vaikuta.
+- Tuntematon `--cassette-mode` -arvo antaa englanninkielisen virheen (`replay`, `record` tai `auto`).
+
 ## [0.3.0] - 2026-10-17
 
 Ensimmäinen npm-julkaisu.
