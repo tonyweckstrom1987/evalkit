@@ -5,6 +5,7 @@ Muoto noudattaa [Keep a Changelog](https://keepachangelog.com/fi/1.1.0/) -tapaa 
 ## [Julkaisematon]
 
 ### Muutettu
+- README on nyt englanniksi ja tarkistettu koodia vasten (kutsuraja, cassette-täsmäytys, `--update-baseline`, `--cassette-mode`).
 - CLI:n ohje (`--help`), virheilmoitukset ja konsoliraportti ovat nyt englanniksi. Poistumiskoodit, lippujen nimet, oletusarvot, JSON-raportin rakenne ja baseline-muoto eivät muutu.
 - JSON-raportin ja vertailun tekstikentät (`failures`, `error`, regression `reason`) ovat englanniksi, esimerkiksi `response does not contain 'x'` ja `error: ...`. Kentät ja niiden tyypit pysyvät ennallaan.
 - Kun tallenne puuttuu `--cassette`-ajossa, viesti neuvoo ajamaan `--cassette-mode record`. Aiempi viesti neuvoi asettamaan `LLM_CASSETTE_MODE=record`, mutta evalkit antaa tilan aina itse, joten ympäristömuuttuja ei vaikuta.

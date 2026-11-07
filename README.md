@@ -1,55 +1,57 @@
 # evalkit
 
-[![CI](https://github.com/tonyweckstrom1987/evalkit/actions/workflows/ci.yml/badge.svg)](https://github.com/tonyweckstrom1987/evalkit/actions/workflows/ci.yml) ![Lisenssi: MIT](https://img.shields.io/badge/lisenssi-MIT-blue.svg)
+[![CI](https://github.com/tonyweckstrom1987/evalkit/actions/workflows/ci.yml/badge.svg)](https://github.com/tonyweckstrom1987/evalkit/actions/workflows/ci.yml) ![License: MIT](https://img.shields.io/badge/license-MIT-blue.svg)
 
-Aja sama prompt-sarja usealla mallilla ja estä regressiot CI:ssä. Evalkit vertaa tuloksia edelliseen hyväksyttyyn ajoon (baseline) ja kaataa ajon vain, jos jokin aiemmin toiminut tapaus lakkaa toimimasta.
+Run the same prompt set against several models and block regressions in CI. Evalkit compares the results with the previous accepted run (the baseline) and fails the run only if a case that used to pass stops passing.
 
-**English summary:** A small CLI that runs one prompt set against several models through any OpenAI-compatible endpoint (LiteLLM, OpenRouter) and compares the results with a stored baseline. Only regressions fail the run, so you can use it as a CI gate. Zod-validated eval set format, hard call caps, no API keys in output. The runner takes an injectable `fetch`, so it works with [llm-cassette](https://github.com/tonyweckstrom1987/llm-cassette) for free, deterministic CI runs. Node 22/24, TypeScript.
+It is a small CLI that talks to any OpenAI-compatible endpoint (LiteLLM, OpenRouter). Features: a zod-validated eval set format, hard call caps, and no API keys in output. The runner takes an injectable `fetch`, so it works with [llm-cassette](https://github.com/tonyweckstrom1987/llm-cassette) for free, deterministic CI runs.
 
-**Teknologiat:** TypeScript, Node.js 22/24, zod, vitest.
+**Tech:** TypeScript, Node.js 22/24, zod, vitest.
 
-> **Tila:** Versio 0.3.0, julkaistu npm:ään nimellä `@tonyweckstrom/evalkit`. Ydin (skeema, ajo, ehdot, baseline, CLI ja `--cassette`) on testattu mallia kutsumatta. GitHub Action (`action.yml`) on mukana.
+> **Status:** Version 0.3.0, published to npm as `@tonyweckstrom/evalkit`. The core (schema, runner, checks, baseline, CLI and `--cassette`) is tested without calling a model. A GitHub Action (`action.yml`) is included.
+>
+> **Note on language:** The repository's `main` branch prints its help, errors and report in English, as shown in this README. The published 0.3.0 package still prints them in Finnish; the English text arrives with the next release. Exit codes, flag names and the baseline format are the same in both. The bundled example eval set (`examples/yleinen-fi.json`) has Finnish prompts.
 
-## Asennus
+## Installation
 
-Tarvitset Node.js 22:n tai 24:n. Ei asennusta, kokeile suoraan:
+You need Node.js 22 or 24. No installation is needed, just try it:
 
 ```bash
 npx @tonyweckstrom/evalkit --version
 ```
 
-Tai lisää projektiin:
+Or add it to a project:
 
 ```bash
 npm install --save-dev @tonyweckstrom/evalkit
 npx evalkit --help
 ```
 
-## Pika-aloitus
+## Quick start
 
-> Komentojen `examples/yleinen-fi.json` on repossa mutta ei npm-paketissa (paketissa on vain `dist/`). Kun asennat paketin npm:stä, lataa tiedosto [repon examples-kansiosta](https://github.com/tonyweckstrom1987/evalkit/blob/main/examples/yleinen-fi.json) tai kirjoita oma evalset (muoto alempana).
+> `examples/yleinen-fi.json` is in the repository but not in the npm package (the package contains only `dist/`). If you installed from npm, download the file from the [examples folder](https://github.com/tonyweckstrom1987/evalkit/blob/main/examples/yleinen-fi.json) or write your own eval set (format below).
 
 ```bash
-export LLM_API_KEY=...   # ei tarvita, jos rajapinta ei vaadi avainta
+export LLM_API_KEY=...   # not needed if the endpoint requires no key
 
-# 1) Luo baseline hyväksytystä tilasta
+# 1) Create a baseline from a state you have accepted
 npx @tonyweckstrom/evalkit run examples/yleinen-fi.json \
   --models openrouter/deepseek/deepseek-v4.1-flash \
   --base-url https://litellm.local/v1 \
   --baseline evalkit.baseline.json --update-baseline
 
-# 2) Aja CI:ssä: kaatuu vain regressioon
+# 2) Run in CI: fails only on a regression
 npx @tonyweckstrom/evalkit run examples/yleinen-fi.json \
   --models openrouter/deepseek/deepseek-v4.1-flash \
   --base-url https://litellm.local/v1 \
   --baseline evalkit.baseline.json
 ```
 
-Commitoi `evalkit.baseline.json` repoon. Kun muutat promptia tai mallia ja tulos on tarkoituksella erilainen, päivitä baseline uudelleen `--update-baseline`-valinnalla ja katselmoi muutos.
+Commit `evalkit.baseline.json` to the repository. When you change a prompt or a model and the result is intentionally different, update the baseline with `--update-baseline` and review the diff.
 
-## Esimerkkituloste
+## Example output
 
-Alla on repon omat testitallenteet (`test/fixtures/action/`) ajettuna `--cassette`-toistolla. Vastaukset ovat valemallin, ei oikean mallin, mutta tuloste on sellaisenaan evalkitin tulostetta. Ensin baseline täsmää, jolloin ajo menee läpi (poistumiskoodi 0), vaikka yksi tapaus kaatuu: se kaatui jo baselinessa.
+Below are the repository's own test recordings (`test/fixtures/action/`) run with `--cassette` replay. The answers come from a fake model, not a real one, but the output is exactly what evalkit prints. First the baseline matches, so the run passes (exit code 0) even though one case fails: it was already failing in the baseline.
 
 ```text
 $ npx evalkit run examples/yleinen-fi.json --models demo --base-url https://litellm.example/v1 \
@@ -62,7 +64,7 @@ Comparison to baseline:
   regressions: 0, fixed: 0, new: 0, missing: 0
 ```
 
-Kun baselinessa sama tapaus oli läpäissyt, sama tulos on regressio ja ajo kaatuu (poistumiskoodi 1):
+When the same case had passed in the baseline, the same result is a regression and the run fails (exit code 1):
 
 ```text
 Comparison to baseline:
@@ -71,33 +73,32 @@ Comparison to baseline:
   demo: pass rate dropped by 33 percentage points
 ```
 
+A three-minute walkthrough with before/after examples and GitHub Action snippets (written in Finnish, with an English summary at the end): [docs/demo.md](docs/demo.md).
 
-Kolmen minuutin ohje ennen/jälkeen-esimerkkeineen ja GitHub Action -pätkineen: [docs/demo.md](docs/demo.md).
-
-## Evalsetin tarkistus ilman kuluja
+## Validate an eval set at no cost
 
 ```bash
 npx evalkit validate examples/yleinen-fi.json evals/*.json
 ```
 
-`validate` lukee tiedostot, tarkistaa muodon (zod), kaksoisid:t ja virheelliset regex-lausekkeet eikä tee yhtään verkkokutsua. Se palauttaa 0, kun kaikki tiedostot kelpaavat, ja 2, jos yksikin ei kelpaa; kaikki tiedostot käydään läpi, joten saat kaikki virheet kerralla. Sopii CI:n ensimmäiseksi vaiheeksi.
+`validate` reads the files and checks the format (zod), duplicate ids and invalid regular expressions. It makes no network calls. It returns 0 when all files are valid and 2 if any file is invalid; every file is checked, so you get all the errors at once. A good first step in CI.
 
-## Evalsetin muoto (versio 1)
+## Eval set format (version 1)
 
 ```json
 {
   "version": 1,
-  "name": "yleinen-fi",
+  "name": "general",
   "cases": [
     {
-      "id": "yleinen-01",
-      "prompt": "Mikä on Ruotsin pääkaupunki?",
-      "systemPrompt": "Vastaa yhdellä sanalla.",
-      "tags": ["yleinen tieto"],
+      "id": "general-01",
+      "prompt": "What is the capital of Sweden?",
+      "systemPrompt": "Answer with one word.",
+      "tags": ["general knowledge"],
       "expect": {
-        "contains": "Tukholma",
+        "contains": "Stockholm",
         "notContains": ["Helsinki"],
-        "regex": "^Tukholma\\.?$",
+        "regex": "^Stockholm\\.?$",
         "minJudgeScore": 4
       }
     }
@@ -105,84 +106,85 @@ npx evalkit validate examples/yleinen-fi.json evals/*.json
 }
 ```
 
-| Kenttä | Merkitys |
+| Field | Meaning |
 | --- | --- |
-| `version` | Aina `1`. |
-| `cases[].id` | Yksilöllinen tunniste. Samaa id:tä ei saa käyttää kahdesti. |
-| `cases[].prompt` | Käyttäjän viesti mallille. |
-| `cases[].systemPrompt` | Valinnainen järjestelmäviesti. |
-| `cases[].tags` | Valinnainen. Ensimmäinen tagi on raportoinnin ryhmä; ilman tageja ryhmä päätellään id:n etuliitteestä (`yleinen-01` → `yleinen`). |
-| `cases[].expect` | Valinnainen lista ehtoja. Tapaus läpäisee, kun **kaikki** annetut ehdot täyttyvät. Ilman `expect`-kenttää tapausta ei arvioida (vastaus vain tallentuu raporttiin). |
-| `expect.contains` | Vastaus sisältää tekstin (kirjainkoosta riippumatta). |
-| `expect.notContains` | Vastaus ei sisällä mitään listan teksteistä. |
-| `expect.regex` | Vastaus täsmää säännölliseen lausekkeeseen. Virheellinen lauseke hylätään ennen ajoa. |
-| `expect.minJudgeScore` | Tuomarimallin pisteet (1–5) vähintään tämän verran. Vaatii `--judge-model`. |
+| `version` | Always `1`. |
+| `name` | Optional name of the set, shown in the report. |
+| `cases[].id` | Unique identifier. The same id cannot be used twice. |
+| `cases[].prompt` | The user message sent to the model. |
+| `cases[].systemPrompt` | Optional system message. |
+| `cases[].tags` | Optional. The first tag is the reporting group; without tags the group is derived from the id prefix (`general-01` → `general`). |
+| `cases[].expect` | Optional set of conditions. A case passes when **all** given conditions hold. Without `expect` the case is not evaluated (the response is only stored in the report). |
+| `expect.contains` | The response contains the text (case-insensitive). |
+| `expect.notContains` | The response contains none of the texts in the list (case-insensitive). |
+| `expect.regex` | The response matches the regular expression. An invalid expression is rejected before the run. |
+| `expect.minJudgeScore` | The judge model's score (1–5) is at least this value. Requires `--judge-model`. |
 
-**Vanha muoto:** mcp-model-routerin taulukkomuoto (`expectedContains`, `category`) luetaan edelleen ja muunnetaan versioksi 1, joten olemassa olevat prompt-tiedostot toimivat sellaisenaan.
+**Legacy format:** the array format of mcp-model-router (`expectedContains`, `category`) is still read and converted to version 1, so existing prompt files work as they are.
 
-## Baseline ja regressioportti
+## Baseline and regression gate
 
-`evalkit.baseline.json` tallentaa jokaisen arvioidun tapauksen tuloksen avaimella `malli::tapausId`.
+`evalkit.baseline.json` stores the result of every evaluated case under the key `model::caseId`.
 
-- **Regressio:** tapaus läpäisi baselinessa mutta ei nyt (myös virhe, esim. aikakatkaisu, lasketaan kaatumiseksi).
-- **Korjaantunut:** tapaus kaatui baselinessa mutta läpäisee nyt.
-- **Uusi:** tapaus ei ole baselinessa. Uusi kaatuva tapaus ei kaada ajoa; päivitä baseline, kun olet tarkistanut sen.
-- **Puuttuva:** tapaus on baselinessa mutta ei tässä ajossa (tapaus poistettu tai mallia ei ajettu).
-- **Epävakaa malli:** `--max-pass-drop 0.1` sallii yksittäiset regressiot, kunhan minkään mallin läpäisyprosentti ei laske yli 10 %-yksikköä. Oletus on 0: yksikin regressio kaataa ajon.
+- **Regression:** the case passed in the baseline but does not now (an error such as a timeout also counts as a failure).
+- **Fixed:** the case failed in the baseline but passes now.
+- **New:** the case is not in the baseline. A new failing case does not fail the run; update the baseline once you have reviewed it.
+- **Missing:** the case is in the baseline but not in this run (the case was removed or the model was not run).
+- **Flaky model:** `--max-pass-drop 0.1` allows individual regressions as long as no model's pass rate drops by more than 10 percentage points. The default is 0: a single regression fails the run.
 
-Ilman `--baseline`-valintaa kaikkien arvioitavien tapausten pitää läpäistä.
+Without `--baseline`, every evaluated case must pass.
 
-## Poistumiskoodit
+## Exit codes
 
-| Koodi | Merkitys |
+| Code | Meaning |
 | --- | --- |
 | 0 | Ok |
-| 1 | Regressio tai (ilman baselinea) epäonnistuneita tapauksia |
-| 2 | Virhe käytössä tai asetuksissa (puuttuva valinta, rikkinäinen evalset, puuttuva baseline, ylitetty kutsuraja) |
+| 1 | Regression, or (without a baseline) failed cases |
+| 2 | Usage or configuration error (missing option, broken eval set, missing baseline, exceeded call cap) |
 
-## Valinnat
+## Options
 
-| Valinta | Merkitys |
+| Option | Meaning |
 | --- | --- |
-| `--models a,b` | Mallit pilkulla eroteltuna (tai `EVALKIT_MODELS`). |
-| `--base-url <url>` | OpenAI-yhteensopiva osoite (tai `EVALKIT_BASE_URL`). |
-| `--api-key-env <NIMI>` | Ympäristömuuttuja, josta avain luetaan (oletus `LLM_API_KEY`). Avainta ei anneta komentoriville. |
-| `--judge-model <malli>` | Tuomarimalli. Valitse eri malli kuin arvioitavat, koska malli suosii omaa vastaustyyliään. |
-| `--baseline <tiedosto>` | Vertaa baselineen. |
-| `--update-baseline` | Kirjoita tämän ajon tulokset baselineksi. |
-| `--max-pass-drop <0-1>` | Sallittu läpäisyprosentin lasku (oletus 0). |
-| `--concurrency <n>` | Samanaikaiset kutsut (oletus 4). |
-| `--timeout-ms <ms>` | Aikakatkaisu per kutsu (oletus 60000). |
-| `--max-tokens <n>` | `max_tokens` per kutsu (oletus 1024, katto 4096). |
-| `--cassette <tiedosto>` | Toista tai tallenna mallivastaukset [llm-cassette](https://github.com/tonyweckstrom1987/llm-cassette)-tiedostoon (ks. alla). Vaatii paketin `@tonyweckstrom/llm-cassette`. |
-| `--cassette-mode <tila>` | `replay` (oletus: ei koskaan verkkoa), `record` tai `auto`. |
-| `--json <tiedosto>` | Kirjoita koko raportti JSON-tiedostoon. |
+| `--models a,b` | Comma-separated models (or `EVALKIT_MODELS`). |
+| `--base-url <url>` | OpenAI-compatible base URL (or `EVALKIT_BASE_URL`). |
+| `--api-key-env <NAME>` | Environment variable the API key is read from (default `LLM_API_KEY`). The key is never passed on the command line. |
+| `--judge-model <model>` | Judge model. Pick a different model than the ones under test, because a model favors its own answer style. |
+| `--baseline <file>` | Compare to the baseline. |
+| `--update-baseline` | Write this run's results as the baseline. Needs `--baseline <file>`. |
+| `--max-pass-drop <0-1>` | Allowed drop in pass rate (default 0). |
+| `--concurrency <n>` | Concurrent requests (default 4). |
+| `--timeout-ms <ms>` | Timeout per request (default 60000). |
+| `--max-tokens <n>` | `max_tokens` per request (default 1024, cap 4096). |
+| `--cassette <file>` | Replay or record model responses with an [llm-cassette](https://github.com/tonyweckstrom1987/llm-cassette) file (see below). Requires the package `@tonyweckstrom/llm-cassette`. |
+| `--cassette-mode <mode>` | `replay` (default: never uses the network), `record` or `auto`. Needs `--cassette`. |
+| `--json <file>` | Write the full report to a JSON file. |
 
-## Kulut ja turvallisuus
+## Cost and safety
 
-- **Kovat katot koodissa:** yksi ajo tekee enintään 200 mallikutsua (tuomarikutsut mukaan lukien), ja `max_tokens` on enintään 4096 per kutsu. Raja tarkistetaan ennen yhtäkään kutsua; sen voi ylittää vain kirjastokäytössä `maxCalls`-asetuksella.
-- **API-avain** luetaan vain ympäristömuuttujasta eikä sitä tulosta raporttiin tai virheilmoituksiin.
-- Raportti (`--json`) sisältää mallien vastaukset sellaisinaan. Älä commitoi sitä, jos promptit sisältävät arkaluonteista tietoa.
+- **Hard caps in code:** one run makes at most 200 model calls (judge calls included), and `max_tokens` is at most 4096 per call. The cap is checked before any call is made. It can be exceeded only when using the library, with the `maxCalls` option.
+- **The API key** is read only from an environment variable and is never printed in the report or in error messages.
+- The report (`--json`) contains the models' responses as they are. Do not commit it if your prompts contain sensitive data.
 
-## Ilmaiset CI-ajot: llm-cassette
+## Free CI runs: llm-cassette
 
-Oikeat mallikutsut maksavat, ja vastaukset vaihtelevat ajosta toiseen. Tallenna vastaukset kerran [llm-cassette](https://github.com/tonyweckstrom1987/llm-cassette)-tiedostoon ja toista ne CI:ssä:
+Real model calls cost money, and responses vary from run to run. Record the responses once into an [llm-cassette](https://github.com/tonyweckstrom1987/llm-cassette) file and replay them in CI:
 
 ```bash
 npm install --save-dev @tonyweckstrom/llm-cassette
 
-# Kerran paikallisesti, oikealla avaimella: tallentaa vastaukset
+# Once, locally, with a real key: records the responses
 npx evalkit run examples/yleinen-fi.json --models m --base-url https://litellm.local/v1 \
   --baseline evalkit.baseline.json --cassette test/cassettes/yleinen.json --cassette-mode record
 
-# CI:ssä: toistaa tallenteet, ei verkkoa eikä kuluja (replay on oletus)
+# In CI: replays the recordings, no network and no cost (replay is the default)
 npx evalkit run examples/yleinen-fi.json --models m --base-url https://litellm.local/v1 \
   --baseline evalkit.baseline.json --cassette test/cassettes/yleinen.json
 ```
 
-Commitoi cassette-tiedosto ja baseline repoon. Jos prompti, malli tai tehtävä muuttuu, `replay` ei löydä vanhaa tallennetta ja kyseinen tapaus kaatuu viestillä "tallennetta ei löytynyt". Tallenna silloin uudelleen `record`-tilassa. Huomaa, että tämä testaa **evalsetin ja ehtojen** toimivuutta tallennettuja vastauksia vastaan, ei mallin nykyistä laatua: mallin laadun muutos näkyy vasta uudessa tallennuksessa.
+Commit the cassette file and the baseline to the repository. A recording is matched by the request URL (so also `--base-url`) and the request body (model, messages and parameters). If the prompt, the model, the base URL or the task changes, `replay` finds no recording and that case fails with the message "No recorded response ... Run once with --cassette-mode record to record it". Record again in `record` mode. Note that this tests whether your **eval set and conditions** work against recorded responses, not the model's current quality: a change in model quality shows only in a new recording.
 
-Kirjastona `runEval` ottaa `fetch`-asetuksen:
+As a library, `runEval` takes a `fetch` option:
 
 ```ts
 import { runEval, loadEvalSet } from "@tonyweckstrom/evalkit";
@@ -192,13 +194,13 @@ const report = await runEval({
   set: loadEvalSet("examples/yleinen-fi.json"),
   models: ["m"],
   baseUrl: "https://litellm.local/v1",
-  fetch: cassetteFetch({ path: "test/cassettes/yleinen.json" }), // oletus: replay
+  fetch: cassetteFetch({ path: "test/cassettes/yleinen.json" }), // default: replay
 });
 ```
 
 ## GitHub Action
 
-Evalkit ajetaan toisen repon CI:ssä yhdellä askeleella. Action asentaa ja kääntää evalkitin itse, joten sinun ei tarvitse julkaista tai asentaa mitään. **Kiinnitä versio commit-tunnisteeseen** (ei haaraan), jotta ulkopuolinen muutos ei pääse työnkulkuusi:
+Run evalkit in another repository's CI with one step. The action installs and builds evalkit itself, so you do not need to publish or install anything. **Pin the version to a commit SHA** (not a branch), so that an outside change cannot reach your workflow:
 
 ```yaml
 jobs:
@@ -207,13 +209,13 @@ jobs:
     steps:
       - uses: actions/checkout@v7
 
-      # Ilmainen ja nopea: tarkistaa tiedostojen muodon ilman verkkoa
+      # Free and fast: checks the file format without network access
       - uses: tonyweckstrom1987/evalkit@<commit-sha>
         with:
           mode: validate
           eval-set: evals/yleinen.json
 
-      # Toista tallennetut vastaukset (ei kuluja, ei avainta)
+      # Replay recorded responses (no cost, no key)
       - uses: tonyweckstrom1987/evalkit@<commit-sha>
         with:
           eval-set: evals/yleinen.json
@@ -223,7 +225,7 @@ jobs:
           cassette: evals/yleinen.cassette.json
 ```
 
-Oikeilla mallikutsuilla (maksaa) avain annetaan secretistä askeleen `env`-lohkossa; sitä ei koskaan anneta syötteenä eikä tulosteta:
+For real model calls (these cost money), pass the key from a secret in the step's `env` block. It is never given as an input and never printed:
 
 ```yaml
       - uses: tonyweckstrom1987/evalkit@<commit-sha>
@@ -236,35 +238,35 @@ Oikeilla mallikutsuilla (maksaa) avain annetaan secretistä askeleen `env`-lohko
           baseline: evals/evalkit.baseline.json
 ```
 
-| Syöte | Merkitys |
+| Input | Meaning |
 | --- | --- |
-| `eval-set` | Evalset-tiedosto (`validate`-tilassa useita välilyönnillä erotettuna). Pakollinen. |
-| `mode` | `run` (oletus) tai `validate`. |
-| `models`, `base-url` | Pakolliset `run`-tilassa. |
-| `baseline`, `max-pass-drop` | Regressioportti (ks. yllä). |
-| `cassette`, `cassette-mode` | Toista tai tallenna vastaukset; CI:ssä jätä `cassette-mode` pois (oletus `replay`). |
-| `judge-model`, `max-tokens`, `concurrency`, `timeout-ms` | Kuten CLI:n valinnat. |
-| `api-key-env` | Avaimen ympäristömuuttujan nimi (oletus `LLM_API_KEY`). |
-| `json-report` | Kirjoita raportti JSON-tiedostoon. Raportti sisältää mallien vastaukset; älä commitoi sitä. |
+| `eval-set` | Eval set file (several files separated by spaces in `validate` mode). Required. |
+| `mode` | `run` (default) or `validate`. |
+| `models`, `base-url` | Required in `run` mode. |
+| `baseline`, `max-pass-drop` | Regression gate (see above). |
+| `cassette`, `cassette-mode` | Replay or record responses; in CI leave `cassette-mode` out (the default is `replay`). |
+| `judge-model`, `max-tokens`, `concurrency`, `timeout-ms` | Same as the CLI options. |
+| `api-key-env` | Name of the environment variable that holds the key (default `LLM_API_KEY`). |
+| `json-report` | Write the report to a JSON file. The report contains the models' responses; do not commit it. |
 
-Syötteet välitetään kuoreen ympäristömuuttujina eikä komentoriville, joten arvoissa olevat erikoismerkit eivät suorita komentoja. Action ei koskaan päivitä baselinea: hyväksy muutokset paikallisesti `--update-baseline`-valinnalla ja katselmoi baseline-tiedoston muutos PR:ssä. Action käyttää Node 24:ää.
+Inputs are passed to the shell as environment variables, not on the command line, so special characters in values cannot run commands. The action never updates the baseline: accept changes locally with `--update-baseline` and review the baseline diff in a pull request. The action uses Node 24.
 
-## Rajoitukset
+## Limitations
 
-- Tuomarimalli on vain yhden luvun arvio (1–5), eikä se korvaa ihmisen tarkistusta. Käytä sitä täydentävänä mittarina.
-- Striimausta ei tueta, ja vain tekstivastauksia arvioidaan.
+- The judge model gives only a single-number score (1–5) and does not replace human review. Use it as a complementary measure.
+- Streaming is not supported, and only text responses are evaluated.
 
-## Vaihtoehtoja ja miksi tämä
+## Alternatives and why this one
 
-Evalkit ei ole ensimmäinen eval-työkalu, ja suurempi ja kypsempi vaihtoehto on olemassa. Valitse sen mukaan, mitä tarvitset:
+Evalkit is not the first eval tool, and larger, more mature alternatives exist. Choose according to what you need:
 
-- **[promptfoo](https://github.com/promptfoo/promptfoo)** on laajin avoimen lähdekoodin vaihtoehto: paljon valmiita arviointitapoja, monta mallitarjoajaa, vertailunäkymä ja oma GitHub Action. Jos tarvitset punaisen tiimin testejä, web-käyttöliittymän tai laajan ominaisuusvalikoiman, käytä sitä.
-- **[DeepEval](https://github.com/confident-ai/deepeval)** ja **[Inspect](https://inspect.aisi.org.uk/)** ovat Python-työkaluja. Ne sopivat, jos projektisi on Pythonia ja haluat arviointeja pytestin tai tutkimustyön tapaan.
-- Evalkit on tarkoituksella pieni (noin 700 riviä, yksi ajonaikainen riippuvuus `zod`) ja keskittyy yhteen kysymykseen: **meneekö jokin aiemmin toiminut tapaus nyt rikki?** Baseline-vertailu on ydin eikä lisäominaisuus, ja vain regressio kaataa CI-ajon. Lisäksi evalset on yksinkertainen JSON-tiedosto, jonka muoto tarkistetaan ilman verkkoa (`validate`), kutsumäärälle on kova katto koodissa, ja yhteensopivuus [llm-cassetten](https://github.com/tonyweckstrom1987/llm-cassette) kanssa antaa ilmaiset ja toistettavat CI-ajot.
+- **[promptfoo](https://github.com/promptfoo/promptfoo)** is the most comprehensive open-source option: many built-in grading methods, many model providers, a comparison view and its own GitHub Action. If you need red-team tests, a web UI or a wide feature set, use it.
+- **[DeepEval](https://github.com/confident-ai/deepeval)** and **[Inspect](https://inspect.aisi.org.uk/)** are Python tools. They fit if your project is in Python and you want evaluations in the style of pytest or research work.
+- Evalkit is deliberately small (about 700 lines of source, one runtime dependency, `zod`) and focuses on one question: **did something that used to work just break?** The baseline comparison is the core, not an add-on, and only a regression fails the CI run. In addition, the eval set is a simple JSON file whose format is checked without network access (`validate`), the number of calls has a hard cap in code, and compatibility with [llm-cassette](https://github.com/tonyweckstrom1987/llm-cassette) gives free, repeatable CI runs.
 
-Tämä vertailu perustuu hakuun ja työkalujen omiin kuvauksiin, ei kaikkien ominaisuuksien kokeiluun. Tarkista nykyinen tilanne niiden omilta sivuilta.
+This comparison is based on searching and on the tools' own descriptions, not on trying out all of their features. Check the current situation on their own pages.
 
-## Kehitys
+## Development
 
 ```bash
 npm ci
